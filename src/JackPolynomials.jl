@@ -214,23 +214,7 @@ end
 # ------------------------------------------------------------------------------
 #~~ JackSymbolic ~~~~##
 # ------------------------------------------------------------------------------
-"""
-    JackPolynomial(x, lambda, alpha)
-
-Symbolic Jack polynomial.
-
-# Arguments
-- `m`: integer, the number of variables
-- `lambda`: partition of an integer
-- `alpha`: alpha parameter
-"""
-function JackPolynomial(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Integer}
-  if !isPartition(lambda)
-    error("`lambda` must be a partition of an integer")
-  end
-  if alpha <= 0
-    error("`alpha` must be positive")
-  end
+function JackPolynomial0(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Integer}
   function jac(m::I, k::I, mu::Vector{I}, nu::Vector{I}, beta::T)
     if isempty(nu) || nu[1] == 0 || m == 0
       return T(1)
@@ -264,7 +248,7 @@ function JackPolynomial(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Int
     if k == 0
       S[_N(lambda, nu), m] = s
     end
-    return s
+    return s 
   end
   DynamicPolynomials.@polyvar x[1:m]
   S = Array{Union{Missing,DynamicPolynomials.Polynomial{true,T}}}(
@@ -273,6 +257,31 @@ function JackPolynomial(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Int
     m,
   )
   jac(m, 0, lambda, lambda, T(1))
+end
+
+"""
+    JackPolynomial(x, lambda, alpha)
+
+Symbolic Jack polynomial.
+
+# Arguments
+- `m`: integer, the number of variables
+- `lambda`: partition of an integer
+- `alpha`: alpha parameter
+"""
+function JackPolynomial(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Integer}
+  if !isPartition(lambda)
+    error("`lambda` must be a partition of an integer")
+  end
+  if alpha <= 0
+    error("`alpha` must be positive")
+  end
+  jack = JackPolynomial0(m, lambda, alpha)
+  if(typeof(jack) == T)
+    DynamicPolynomials.@polyvar x[1:m]
+    jack = sum(T(0) * x) + jack
+  end
+  return jack
 end
 
 

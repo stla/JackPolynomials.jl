@@ -19,3 +19,22 @@ using Test
     @test isapprox(Jack([2.0; 3.0; 4.0; 5.0], [4], 2.5), 500338.5)
   end
 end
+
+@testset "Jack symbolic" begin
+  @testset "Jack at x = 0" begin
+    @test isapprox(JackPolynomial(2, Int64[], 2.0)(0.0, 0.0), 1.0)
+    @test isapprox(JackPolynomial(3, [3; 2], 2.0)(0.0, 0.0, 0.0), 0.0)
+  end
+  @testset "Jack = 0 when l(lambda)>l(x)" begin
+    @test JackPolynomial(2, [3; 2; 1], 2.0) == 0.0
+    @test JackPolynomial(2, [3; 2; 1], 1.0) == 0.0
+  end
+  @testset "Jack = 1 when the partition is empty" begin
+    @test JackPolynomial(2, Int64[], 2.0) == 1.0
+    @test JackPolynomial(2, [0; 0], 2.0) == 1.0
+  end
+  @testset "Jack - some values" begin
+    @test isapprox(JackPolynomial(4, [3; 1], 2.5)(2.0, 3.0, 4.0, 5.0), 111217.0)
+    @test isapprox(JackPolynomial(4, [4], 2.5)(2.0, 3.0, 4.0, 5.0), 500338.5)
+  end
+end
