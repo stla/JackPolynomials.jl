@@ -1,0 +1,7 @@
+name = "JackPolynomials"
+uuid = "ddfd1fc9-90b3-4604-ab0e-bc3dcbfcf898"
+authors = ["Stéphane Laurent <laurent_step@outlook.fr>"]
+version = "0.1.0"
+
+[deps]
+DynamicPolynomials = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
