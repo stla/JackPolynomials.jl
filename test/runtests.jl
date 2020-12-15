@@ -58,3 +58,14 @@ end
     @test isapprox(Schur(x, [3; 2]), expected)
   end
 end
+
+@testset "Zonal" begin
+  @testset "Zonal sum to the trace" begin
+    x = [3.0; 4.0; 5.0]
+    z = Zonal(x, [3]) + Zonal(x, [2,1]) + Zonal(x, [1,1,1])
+    @test isapprox(z, sum(x)^3)
+  end 
+  @testset "Zonal = 0 when l(lambda)>l(x)" begin
+    @test isapprox(Zonal([1.0; 2.0], [3; 2; 1]), 0.0)
+  end
+end
