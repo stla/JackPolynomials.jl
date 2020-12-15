@@ -375,12 +375,12 @@ Symbolic Schur polynomial.
 # Arguments
 - `m`: integer, the number of variables
 - `lambda`: partition of an integer
-- `type`: the type of the coefficients of the polynomial; default `Rational`
+- `type`: the type of the coefficients of the polynomial; default `Int64`
 """
 function SchurPolynomial(
   m::I, 
   lambda::Vector{I}, 
-  type::Type = Rational
+  type::Type = Int64
 ) where {I<:Integer}
   if !isPartition(lambda)
     error("`lambda` must be a partition of an integer")
