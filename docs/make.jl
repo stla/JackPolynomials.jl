@@ -18,6 +18,6 @@ makedocs(
 
 deploydocs(;
     branch = "gh-pages",
-    devbranch = "main",
+    devbranch = "master",
     repo = "github.com/stla/JackPolynomials.jl",
 )
