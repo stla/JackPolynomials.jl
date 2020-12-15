@@ -2,6 +2,8 @@ module JackPolynomials
 
 import DynamicPolynomials
 export JackPolynomial
+export ZonalPolynomial
+export SchurPolynomial
 export Zonal
 export Schur
 export Jack
@@ -109,11 +111,89 @@ function Jack(
 end
 
 # ------------------------------------------------------------------------------
+#~~ Symbolic Jack polynomial ~~~~##
+# ------------------------------------------------------------------------------
+function JackPolynomial0(
+  m::I, lambda::Vector{I}, alpha::T
+) where {T<:Real,I<:Integer}
+  function jac(m::I, k::I, mu::Vector{I}, nu::Vector{I}, beta::T)
+    if isempty(nu) || nu[1] == 0 || m == 0
+      return T(1)
+    end
+    lnu = length(nu)
+    if lnu > m && nu[m+1] > 0
+      return T(0)
+    end
+    if m == 1
+      return x[1]^(nu[1]) * prod(1 .+ alpha .* collect(1:(nu[1]-1)))
+    end
+    v = S[_N(lambda, nu), m]
+    if k == 0 && !ismissing(v)
+      return v
+    end
+    i = max(1, k)
+    s = jac(m - 1, 0, nu, nu, T(1)) * beta * x[m]^(sum(mu) - sum(nu))
+    while lnu >= i && nu[i] > 0
+      if lnu == i || nu[i] > nu[i+1]
+        nuPrime = copy(nu)
+        nuPrime[i, 1] -= 1
+        gamma = beta * betaratio(mu, nu, i, alpha)
+        if nu[i] > 1
+          s += jac(m, i, mu, nuPrime, gamma)
+        else
+          s += jac(m - 1, 0, nuPrime, nuPrime, T(1)) * gamma * x[m]^(sum(mu) - sum(nuPrime))
+        end
+      end
+      i += 1
+    end
+    if k == 0
+      S[_N(lambda, nu), m] = s
+    end
+    return s 
+  end
+  DynamicPolynomials.@polyvar x[1:m]
+  S = Array{Union{Missing,DynamicPolynomials.Polynomial{true,T}}}(
+    missing,
+    _N(lambda, lambda),
+    m,
+  )
+  jac(m, 0, lambda, lambda, T(1))
+end
+
+"""
+    JackPolynomial(x, lambda, alpha)
+
+Symbolic Jack polynomial. The coefficients of the polynomial will have the 
+same type as `alpha`.
+
+# Arguments
+- `m`: integer, the number of variables
+- `lambda`: partition of an integer
+- `alpha`: alpha parameter
+"""
+function JackPolynomial(
+  m::I, lambda::Vector{I}, alpha::T
+) where {T<:Real,I<:Integer}
+  if !isPartition(lambda)
+    error("`lambda` must be a partition of an integer")
+  end
+  if alpha <= 0
+    error("`alpha` must be positive")
+  end
+  jack = JackPolynomial0(m, lambda, alpha)
+  if(typeof(jack) == T)
+    DynamicPolynomials.@polyvar x[1:m]
+    jack = sum(T(0) * x) + jack
+  end
+  return jack
+end
+
+# ------------------------------------------------------------------------------
 #~~ Zonal polynomial ~~~~##
 # ------------------------------------------------------------------------------
 function _i(lambda::Vector{T}) where {T<:Integer}
   out = T[]
-  for i = 1:length(lambda)
+  for i in 1:length(lambda)
     out = vcat(out, repeat([i], lambda[i]))
   end
   return out
@@ -157,7 +237,32 @@ function Zonal(
 end
 
 # ------------------------------------------------------------------------------
-#~~ Schur ~~~~##
+#~~ Symbolic zonal polynomial ~~~~##
+# ------------------------------------------------------------------------------
+"""
+    ZonalPolynomial(m, lambda[, type])
+
+Symbolic zonal polynomial.
+
+# Arguments
+- `m`: integer, the number of variables
+- `lambda`: partition of an integer
+- `type`: the type of the coefficients of the polynomial; default `Rational`
+"""
+function ZonalPolynomial(
+  m::I, 
+  lambda::Vector{I}, 
+  type::Type = Rational
+) where {I<:Integer}
+  jack = JackPolynomial(m, lambda, type(2))
+  jlambda = prod(hookLengths(lambda, type(2)))
+  n = sum(lambda)
+  return jack * 2^n * factorial(n) / jlambda
+end
+
+
+# ------------------------------------------------------------------------------
+#~~ Schur polynomial ~~~~##
 # ------------------------------------------------------------------------------
 """
     Schur(x, lambda)
@@ -212,77 +317,80 @@ function Schur(x::Vector{T}, lambda::Vector{I}) where {T<:Number,I<:Integer}
 end
 
 # ------------------------------------------------------------------------------
-#~~ JackSymbolic ~~~~##
+#~~ Symbolic Schur polynomial ~~~~##
 # ------------------------------------------------------------------------------
-function JackPolynomial0(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Integer}
-  function jac(m::I, k::I, mu::Vector{I}, nu::Vector{I}, beta::T)
+function SchurPolynomial0(
+  m::I, 
+  lambda::Vector{I},
+  T::Type
+) where {I<:Integer}
+  function sch(m::Int64, k::Int64, nu::Vector{I})
     if isempty(nu) || nu[1] == 0 || m == 0
       return T(1)
     end
-    lnu = length(nu)
-    if lnu > m && nu[m+1] > 0
+    if length(nu) > m && nu[m+1] > 0
       return T(0)
     end
     if m == 1
-      return x[1]^(nu[1]) * prod(1 .+ alpha .* collect(1:(nu[1]-1)))
+      return x[1]^nu[1]
     end
     v = S[_N(lambda, nu), m]
-    if k == 0 && !ismissing(v)
+    if !ismissing(v)
       return v
     end
-    i = max(1, k)
-    s = jac(m - 1, 0, nu, nu, T(1)) * beta * x[m]^(sum(mu) - sum(nu))
+    s = sch(m - 1, 1, nu)
+    lnu = length(nu)
+    i = k
     while lnu >= i && nu[i] > 0
       if lnu == i || nu[i] > nu[i+1]
-        nuPrime = copy(nu)
-        nuPrime[i, 1] -= 1
-        gamma = beta * betaratio(mu, nu, i, alpha)
+        nup = copy(nu)
+        nup[i] -= 1
         if nu[i] > 1
-          s += jac(m, i, mu, nuPrime, gamma)
+          s += x[m] * sch(m, i, nup)
         else
-          s += jac(m - 1, 0, nuPrime, nuPrime, T(1)) * gamma * x[m]^(sum(mu) - sum(nuPrime))
+          s += x[m] * sch(m - 1, 1, nup)
         end
       end
       i += 1
     end
-    if k == 0
-      S[_N(lambda, nu), m] = s
+    if k == 1
+      S[_N(lambda, lambda), m] = s
     end
-    return s 
-  end
+    return s
+  end # end sch --------------------------------------------------------------
   DynamicPolynomials.@polyvar x[1:m]
   S = Array{Union{Missing,DynamicPolynomials.Polynomial{true,T}}}(
     missing,
     _N(lambda, lambda),
-    m,
+    m
   )
-  jac(m, 0, lambda, lambda, T(1))
+  sch(m, 1, lambda)
 end
 
 """
-    JackPolynomial(x, lambda, alpha)
+    SchurPolynomial(m, lambda[, type])
 
-Symbolic Jack polynomial.
+Symbolic Schur polynomial.
 
 # Arguments
 - `m`: integer, the number of variables
 - `lambda`: partition of an integer
-- `alpha`: alpha parameter
+- `type`: the type of the coefficients of the polynomial; default `Rational`
 """
-function JackPolynomial(m::I, lambda::Vector{I}, alpha::T) where {T<:Real,I<:Integer}
+function SchurPolynomial(
+  m::I, 
+  lambda::Vector{I}, 
+  type::Type = Rational
+) where {I<:Integer}
   if !isPartition(lambda)
     error("`lambda` must be a partition of an integer")
   end
-  if alpha <= 0
-    error("`alpha` must be positive")
-  end
-  jack = JackPolynomial0(m, lambda, alpha)
-  if(typeof(jack) == T)
+  schur = SchurPolynomial0(m, lambda, type)
+  if(typeof(schur) == type)
     DynamicPolynomials.@polyvar x[1:m]
-    jack = sum(T(0) * x) + jack
+    schur = sum(type(0) * x) + schur
   end
-  return jack
+  return schur
 end
-
 
 end # module

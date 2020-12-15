@@ -3,8 +3,7 @@
 Schur polynomials have applications in combinatorics and zonal polynomials have 
 applications in multivariate statistics. They are particular cases of 
 [Jack polynomials](https://en.wikipedia.org/wiki/Jack_function). This package 
-allows to evaluate these polynomials. It can also compute the symbolic form of a 
-Jack polynomial:
+allows to evaluate these polynomials. It can also compute their symbolic form:
 
 ```julia
 julia> jack = JackPolynomial(2, [3 ; 1], 2.5)
