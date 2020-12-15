@@ -1,8 +1,8 @@
-# Jack.jl documentation
+# JackPolynomials.jl documentation
 
 ## Member functions
 
 ```@autodocs
-Modules = [Jack]
+Modules = [JackPolynomials]
 Order   = [:type, :function]
 ```
