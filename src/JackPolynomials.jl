@@ -69,7 +69,7 @@ function Jack(
   if alpha <= 0
     error("`alpha` must be positive")
   end
-  function jac(m::I, k::I, mu::Vector{I}, nu::Vector{I}, beta::T)
+  function jac(m::I, k::I, mu::Vector{I}, nu::Vector{I}, beta::Real)
     if isempty(nu) || nu[1] == 0 || m == 0
       return C(1)
     end
@@ -149,7 +149,7 @@ function JackPolynomial0(
     if k == 0
       S[_N(lambda, nu), m] = s
     end
-    return s 
+    return s
   end
   DynamicPolynomials.@polyvar x[1:m]
   S = Array{Union{Missing,DynamicPolynomials.Polynomial{true,T}}}(
@@ -161,9 +161,9 @@ function JackPolynomial0(
 end
 
 """
-    JackPolynomial(x, lambda, alpha)
+    JackPolynomial(m, lambda, alpha)
 
-Symbolic Jack polynomial. The coefficients of the polynomial will have the 
+Symbolic Jack polynomial. The coefficients of the polynomial will have the
 same type as `alpha`.
 
 # Arguments
@@ -250,8 +250,8 @@ Symbolic zonal polynomial.
 - `type`: the type of the coefficients of the polynomial; default `Rational`
 """
 function ZonalPolynomial(
-  m::I, 
-  lambda::Vector{I}, 
+  m::I,
+  lambda::Vector{I},
   type::Type = Rational
 ) where {I<:Integer}
   jack = JackPolynomial(m, lambda, type(2))
@@ -259,6 +259,54 @@ function ZonalPolynomial(
   n = sum(lambda)
   return jack * 2^n * factorial(n) / jlambda
 end
+
+
+# ------------------------------------------------------------------------------
+#~~ Quaternionic zonal polynomial ~~~~##
+# ------------------------------------------------------------------------------
+"""
+    ZonalQ(x, lambda)
+
+Evaluates a quaternionic zonal polynomial.
+
+# Arguments
+- `x`: vector of real or complex numbers
+- `lambda`: partition of an integer
+"""
+function ZonalQ(
+  x::Vector{<:Union{R,Complex{R}}},
+  lambda::Vector{<:Integer},
+) where {R<:Real}
+  jack = Jack(x, lambda, R(0.5))
+  jlambda = prod(hookLengths(lambda, R(0.5)))
+  n = sum(lambda)
+  return jack * factorial(n) / 2^n / jlambda
+end
+
+# ------------------------------------------------------------------------------
+#~~ Symbolic quaternionic zonal polynomial ~~~~##
+# ------------------------------------------------------------------------------
+"""
+    ZonalQPolynomial(m, lambda[, type])
+
+Symbolic quaternionic zonal polynomial.
+
+# Arguments
+- `m`: integer, the number of variables
+- `lambda`: partition of an integer
+- `type`: the type of the coefficients of the polynomial; default `Rational`
+"""
+function ZonalQPolynomial(
+  m::I,
+  lambda::Vector{I},
+  type::Type = Rational
+) where {I<:Integer}
+  jack = JackPolynomial(m, lambda, type(0.5))
+  jlambda = prod(hookLengths(lambda, type(0.5)))
+  n = sum(lambda)
+  return jack * factorial(n) / 2^n / jlambda
+end
+
 
 
 # ------------------------------------------------------------------------------
@@ -320,7 +368,7 @@ end
 #~~ Symbolic Schur polynomial ~~~~##
 # ------------------------------------------------------------------------------
 function SchurPolynomial0(
-  m::I, 
+  m::I,
   lambda::Vector{I},
   T::Type
 ) where {I<:Integer}
@@ -378,8 +426,8 @@ Symbolic Schur polynomial.
 - `type`: the type of the coefficients of the polynomial; default `Int64`
 """
 function SchurPolynomial(
-  m::I, 
-  lambda::Vector{I}, 
+  m::I,
+  lambda::Vector{I},
   type::Type = Int64
 ) where {I<:Integer}
   if !isPartition(lambda)

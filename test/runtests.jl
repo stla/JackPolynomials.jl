@@ -45,7 +45,7 @@ end
     s = Schur(x, [4]) + 3*Schur(x, [3,1]) + 2*Schur(x, [2,2]) +
       3*Schur(x, [2,1,1]) + Schur(x, [1,1,1,1])
     @test isapprox(s, sum(x)^4)
-  end 
+  end
   @testset "Schur = 0 when l(lambda)>l(x)" begin
     @test isapprox(Schur([1.0; 2.0], [3; 2; 1]), 0.0)
   end
@@ -64,8 +64,16 @@ end
     x = [3.0; 4.0; 5.0]
     z = Zonal(x, [3]) + Zonal(x, [2,1]) + Zonal(x, [1,1,1])
     @test isapprox(z, sum(x)^3)
-  end 
+  end
   @testset "Zonal = 0 when l(lambda)>l(x)" begin
     @test isapprox(Zonal([1.0; 2.0], [3; 2; 1]), 0.0)
+  end
+end
+
+@testset "ZonalQ" begin
+  @testset "ZonalQ sum to the trace" begin
+    x = [3.0; 4.0; 5.0]
+    z = ZonalQ(x, [3]) + ZonalQ(x, [2,1]) + ZonalQ(x, [1,1,1])
+    @test isapprox(z, sum(x)^3)
   end
 end
