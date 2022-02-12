@@ -3,8 +3,10 @@ module JackPolynomials
 import DynamicPolynomials
 export JackPolynomial
 export ZonalPolynomial
+export ZonalQPolynomial
 export SchurPolynomial
 export Zonal
+export ZonalQ
 export Schur
 export Jack
 
