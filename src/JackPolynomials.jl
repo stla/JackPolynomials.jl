@@ -228,8 +228,7 @@ function JackPolynomial0(
   SS, alpha = AbstractAlgebra.PolynomialRing(AbstractAlgebra.QQ, "alpha")
   TT = AbstractAlgebra.FractionField(SS)
   UU, x = AbstractAlgebra.PolynomialRing(TT, xstr)
-  FSS = typeof(alpha//1)
-  S = Array{Union{Missing,Any}}(
+  S = Array{Union{Missing,AbstractAlgebra.Generic.MPoly{AbstractAlgebra.Generic.Frac{AbstractAlgebra.Generic.Poly{Rational{BigInt}}}}}}(
     missing,
     _N(lambda, lambda),
     m
@@ -279,7 +278,7 @@ end
 """
     JackPolynomial(m, lambda)
 
-Symbolic Jack polynomial. The coefficients of the polynomial xxx
+Symbolic Jack polynomial with symbolic parameter `alpha`.
 
 # Arguments
 - `m`: integer, the number of variables
