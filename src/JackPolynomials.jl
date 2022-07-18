@@ -1,6 +1,7 @@
 module JackPolynomials
 
 import DynamicPolynomials
+import AbstractAlgebra
 export JackPolynomial
 export ZonalPolynomial
 export ZonalQPolynomial
@@ -39,6 +40,33 @@ function betaratio(
   prod1 = prod(u ./ (u .+ alpha .- 1))
   prod2 = prod((v .+ alpha) ./ v)
   prod3 = prod((w .+ alpha) ./ w)
+  return alpha * prod1 * prod2 * prod3
+end
+
+function betaratioSS(
+  kappa::Vector{I},
+  mu::Vector{I},
+  k::I,
+  alpha
+) where {I<:Integer}
+  local prod2, prod3
+  muk = mu[k]
+  t = k - alpha * muk
+  u = map(i -> t + 1 - i + alpha * kappa[i], 1:k)
+  v = map(i -> t - i + alpha * mu[i], 1:(k-1))
+  muPrime = dualPartition(mu)
+  w = map(i -> muPrime[i] - t - alpha * i, 1:(muk-1))
+  prod1 = prod(u .// (u .+ alpha .- 1))
+  if k == 1
+    prod2 = 1
+  else
+    prod2 = prod((v .+ alpha) .// v)
+  end
+  if muk == 1
+    prod3 = 1
+  else
+    prod3 = prod((w .+ alpha) .// w)
+  end
   return alpha * prod1 * prod2 * prod3
 end
 
@@ -113,7 +141,7 @@ function Jack(
 end
 
 # ------------------------------------------------------------------------------
-#~~ Symbolic Jack polynomial ~~~~##
+#~~ Symbolic Jack polynomial with numeric alpha ~~~~##
 # ------------------------------------------------------------------------------
 function JackPolynomial0(
   m::I, lambda::Vector{I}, alpha::T
@@ -187,6 +215,83 @@ function JackPolynomial(
     DynamicPolynomials.@polyvar x[1:m]
     jack = sum(T(0) * x) + jack
   end
+  return jack
+end
+
+# ------------------------------------------------------------------------------
+#~~ Symbolic Jack polynomial with symbolic alpha ~~~~##
+# ------------------------------------------------------------------------------
+function JackPolynomial0(
+  m::I, lambda::Vector{I}
+) where {I<:Integer}
+  xstr = map(i -> "x_" * string(i), 1:m)
+  SS, alpha = AbstractAlgebra.PolynomialRing(AbstractAlgebra.QQ, "alpha")
+  TT = AbstractAlgebra.FractionField(SS)
+  UU, x = AbstractAlgebra.PolynomialRing(TT, xstr)
+  FSS = typeof(alpha//1)
+  S = Array{Union{Missing,Any}}(
+    missing,
+    _N(lambda, lambda),
+    m
+  )
+  function jac(m::I, k::I, mu::Vector{I}, nu::Vector{I}, beta)
+    if isempty(nu) || nu[1] == 0 || m == 0
+      return one(UU)
+    end
+    lnu = length(nu)
+    if lnu > m && nu[m+1] > 0
+      return zero(UU)
+    end
+    if m == 1
+      if nu[1] == 1
+        return x[1]^(nu[1])
+      else
+        return x[1]^(nu[1]) * prod(1 .+ alpha .* collect(1:(nu[1]-1)))
+      end
+    end
+    v = S[_N(lambda, nu), m]
+    if k == 0 && !ismissing(v)
+      return v
+    end
+    i = max(1, k)
+    s = jac(m - 1, 0, nu, nu, one(TT)) * beta * x[m]^(sum(mu) - sum(nu))
+    while lnu >= i && nu[i] > 0
+      if lnu == i || nu[i] > nu[i+1]
+        nuPrime = copy(nu)
+        nuPrime[i, 1] -= 1
+        gamma = beta * betaratioSS(mu, nu, i, alpha)
+        if nu[i] > 1
+          s += jac(m, i, mu, nuPrime, gamma)
+        else
+          s += jac(m - 1, 0, nuPrime, nuPrime, one(TT)) * gamma * x[m]^(sum(mu) - sum(nuPrime))
+        end
+      end
+      i += 1
+    end
+    if k == 0
+      S[_N(lambda, nu), m] = s
+    end
+    return s
+  end
+  jac(m, 0, lambda, lambda, one(TT))
+end
+
+"""
+    JackPolynomial(m, lambda)
+
+Symbolic Jack polynomial. The coefficients of the polynomial xxx
+
+# Arguments
+- `m`: integer, the number of variables
+- `lambda`: partition of an integer
+"""
+function JackPolynomial(
+  m::I, lambda::Vector{I}
+) where {I<:Integer}
+  if !isPartition(lambda)
+    error("`lambda` must be a partition of an integer")
+  end
+  jack = JackPolynomial0(m, lambda)
   return jack
 end
 
